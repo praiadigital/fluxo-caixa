@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fluxo de Caixa da Temporada — controle seu aluguel de temporada</title>
+<meta name="description" content="Gestão financeira simples para anfitriões: reservas, despesas e lucro por mês, salvos no navegador. Satélite da rede praia.digital">
+<style>
+body{margin:0;font-family:system-ui,sans-serif;background:#f0fdf4;color:#14532d;min-height:100vh}
+header{padding:24px;text-align:center;background:linear-gradient(120deg,#15803d,#22c55e);color:#fff}
+nav a{color:#fef08a;margin:0 8px;text-decoration:none;font-size:14px}
+.wrap{max-width:720px;margin:auto;padding:24px}
+.panel{background:#fff;border-radius:16px;padding:22px;margin-bottom:16px;box-shadow:0 6px 18px rgba(21,128,61,.1)}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center}
+.kpis div{background:#f0fdf4;border-radius:12px;padding:14px}
+.kpis b{display:block;font-size:22px}
+.in{color:#16a34a}.out{color:#dc2626}
+form{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px}
+input,select{padding:11px;border-radius:10px;border:2px solid #bbf7d0;font-size:14px;width:100%}
+button.add{background:#15803d;color:#fff;border:none;border-radius:10px;padding:0 18px;font-size:20px;cursor:pointer}
+.linha{display:grid;grid-template-columns:2fr 1fr auto;gap:8px;padding:8px 0;border-bottom:1px dashed #bbf7d0;align-items:center}
+.linha button{background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px}
+canvas{width:100%;height:180px;background:#f0fdf4;border-radius:12px;margin-top:10px}
+footer{padding:20px;text-align:center;font-size:13px}
+footer a{color:#15803d}
+</style></head>
+<body>
+<header><h1>💵 Fluxo de Caixa da Temporada</h1><p>Reservas, despesas e lucro real do seu imóvel — tudo salvo no navegador</p>
+<nav><a href="https://praia.digital">Praia Digital</a><a href="https://praia.digital/area-anfitriao">Área do Anfitrião</a><a href="https://praia.digital/calculadora-temporada">Calc. Temporada</a><a href="https://praia.digital/apps">Todos os apps</a></nav></header>
+<div class="wrap">
+<div class="panel"><div class="kpis"><div>Entradas<b class="in" id="kin">R$ 0</b></div><div>Saídas<b class="out" id="kout">R$ 0</b></div><div>Lucro<b id="klucro">R$ 0</b></div></div><canvas id="cv" width="680" height="180"></canvas></div>
+<div class="panel"><h2>➕ Novo lançamento</h2>
+<form onsubmit="add(event)"><input id="d" placeholder="Descrição (ex.: reserva Réveillon)" required><input id="v" type="number" placeholder="Valor" required><select id="t"><option value="in">Entrada</option><option value="out">Saída</option></select><button class="add">+</button></form></div>
+<div class="panel"><h2>📒 Lançamentos</h2><div id="lista"></div><button onclick="if(confirm('Apagar tudo?')){dados=[];save();draw();}" style="background:#fee2e2;border:none;color:#dc2626;border-radius:99px;padding:8px 18px;cursor:pointer;margin-top:10px">🗑 Limpar tudo</button></div>
+</div>
+<footer>Rede <a href="https://praia.digital">praia.digital</a> · <a href="https://praia.digital/marea">Maréa</a> · <a href="https://praia.digital/ferramentas-airbnb">Ferramentas Airbnb</a> · <a href="https://praia.digital/decor-praia">Decor Praia</a></footer>
+<script>
+let dados=JSON.parse(localStorage.getItem('fluxopraia')||'[]');
+function fmt(v){return 'R$ '+Math.round(v).toLocaleString('pt-BR')}
+function save(){localStorage.setItem('fluxopraia',JSON.stringify(dados));}
+function add(e){e.preventDefault();dados.push({d:d.value,v:+v.value,t:t.value});d.value='';v.value='';save();draw();}
+function del(i){dados.splice(i,1);save();draw();}
+function draw(){
+const ent=dados.filter(x=>x.t==='in').reduce((s,x)=>s+x.v,0),sai=dados.filter(x=>x.t==='out').reduce((s,x)=>s+x.v,0);
+kin.textContent=fmt(ent);kout.textContent=fmt(sai);klucro.textContent=fmt(ent-sai);klucro.style.color=ent>=sai?'#16a34a':'#dc2626';
+lista.innerHTML=dados.length?dados.map((x,i)=>`<div class="linha"><span>${x.d}</span><b class="${x.t}">${x.t==='in'?'+':'−'} ${fmt(x.v)}</b><button onclick="del(${i})">✖</button></div>`).join(''):'<p>Nenhum lançamento ainda.</p>';
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');ctx.clearRect(0,0,680,180);
+let saldo=0,i=0;ctx.strokeStyle='#15803d';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(10,170);
+if(dados.length){dados.forEach(x=>{saldo+=x.t==='in'?x.v:-x.v;i++;const mx=Math.max(...dados.map((_,j)=>Math.abs(dados.slice(0,j+1).reduce((s,y)=>s+(y.t==='in'?y.v:-y.v),0))),1);ctx.lineTo(10+i/dados.length*660,170-Math.max(0,saldo/mx*150));});ctx.stroke();}}
+draw();
+</script></body></html>
